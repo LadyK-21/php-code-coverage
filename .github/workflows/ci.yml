@@ -7,7 +7,7 @@ on:
 name: CI
 
 env:
-  COMPOSER_ROOT_VERSION: "10.1-dev"
+  COMPOSER_ROOT_VERSION: "12.0.x-dev"
 
 jobs:
   coding-guidelines:
@@ -17,12 +17,12 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Install PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: 8.2
+          php-version: 8.3
           extensions: none, iconv, json, phar, tokenizer
           coverage: none
           tools: none
@@ -30,28 +30,28 @@ jobs:
       - name: Run PHP-CS-Fixer
         run: ./tools/php-cs-fixer fix --dry-run --show-progress=dots --using-cache=no --verbose
 
-  type-checker:
-    name: Type Checker
+  static-analysis:
+    name: Static Analysis
 
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Install PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: 8.2
-          extensions: none, dom, iconv, mbstring, opcache, simplexml, tokenizer, xml, xmlwriter
+          php-version: 8.4
+          extensions: none, ctype, dom, iconv, mbstring, opcache, simplexml, tokenizer, xml, xmlwriter
           coverage: none
           tools: none
 
-      - name: Update dependencies with composer
+      - name: Install dependencies with Composer
         run: ./tools/composer update --no-interaction --no-ansi --no-progress
 
-      - name: Run vimeo/psalm
-        run: ./tools/psalm --config=.psalm/config.xml --no-progress --shepherd --show-info=false --stats
+      - name: Run PHPStan
+        run: ./tools/phpstan analyse --no-progress --error-format=github
 
   tests:
     name: Tests
@@ -59,7 +59,7 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     env:
-      PHP_EXTENSIONS: none, dom, json, libxml, mbstring, openssl, pdo_sqlite, soap, tokenizer, xml, xmlwriter
+      PHP_EXTENSIONS: none, ctype, dom, json, libxml, mbstring, openssl, pdo_sqlite, soap, tokenizer, xml, xmlwriter
       PHP_INI_VALUES: memory_limit=-1, assert.exception=1, zend.assertions=1, error_reporting=-1, log_errors_max_len=0, display_errors=On
 
     strategy:
@@ -70,9 +70,9 @@ jobs:
           - windows-latest
 
         php-version:
-          - "8.1"
-          - "8.2"
           - "8.3"
+          - "8.4"
+          - "8.5"
 
         coverage-driver:
           - "pcov"
@@ -84,7 +84,7 @@ jobs:
         run: git config --global core.autocrlf false
 
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Install PHP with extensions
         uses: shivammathur/setup-php@v2
@@ -99,9 +99,15 @@ jobs:
         run: php ./tools/composer update --no-ansi --no-interaction --no-progress
 
       - name: Run tests with PHPUnit
-        run: vendor/bin/phpunit --coverage-clover=coverage.xml
+        run: vendor/bin/phpunit --log-junit junit.xml --coverage-clover=coverage.xml
 
-      - name: Send code coverage report to Codecov.io
-        uses: codecov/codecov-action@v3
+      - name: Upload test results to Codecov.io
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Upload code coverage data to Codecov.io
+        uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}

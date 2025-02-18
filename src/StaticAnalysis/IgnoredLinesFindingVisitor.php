@@ -15,6 +15,7 @@ use PhpParser\Node;
 use PhpParser\Node\Attribute;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassMethod;
+use PhpParser\Node\Stmt\Enum_;
 use PhpParser\Node\Stmt\Function_;
 use PhpParser\Node\Stmt\Interface_;
 use PhpParser\Node\Stmt\Trait_;
@@ -26,7 +27,7 @@ use PhpParser\NodeVisitorAbstract;
 final class IgnoredLinesFindingVisitor extends NodeVisitorAbstract
 {
     /**
-     * @psalm-var array<int>
+     * @var array<int>
      */
     private array $ignoredLines = [];
     private readonly bool $useAnnotationsForIgnoringCode;
@@ -38,19 +39,20 @@ final class IgnoredLinesFindingVisitor extends NodeVisitorAbstract
         $this->ignoreDeprecated              = $ignoreDeprecated;
     }
 
-    public function enterNode(Node $node): void
+    public function enterNode(Node $node): null
     {
         if (!$node instanceof Class_ &&
             !$node instanceof Trait_ &&
             !$node instanceof Interface_ &&
+            !$node instanceof Enum_ &&
             !$node instanceof ClassMethod &&
             !$node instanceof Function_ &&
             !$node instanceof Attribute) {
-            return;
+            return null;
         }
 
         if ($node instanceof Class_ && $node->isAnonymous()) {
-            return;
+            return null;
         }
 
         if ($node instanceof Class_ ||
@@ -66,11 +68,11 @@ final class IgnoredLinesFindingVisitor extends NodeVisitorAbstract
         }
 
         if (!$this->useAnnotationsForIgnoringCode) {
-            return;
+            return null;
         }
 
         if ($node instanceof Interface_) {
-            return;
+            return null;
         }
 
         if ($node instanceof Attribute &&
@@ -82,14 +84,16 @@ final class IgnoredLinesFindingVisitor extends NodeVisitorAbstract
                 $this->ignoredLines[] = $line;
             }
 
-            return;
+            return null;
         }
 
         $this->processDocComment($node);
+
+        return null;
     }
 
     /**
-     * @psalm-return array<int>
+     * @return array<int>
      */
     public function ignoredLines(): array
     {

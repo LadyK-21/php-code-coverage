@@ -9,16 +9,18 @@
  */
 namespace SebastianBergmann\CodeCoverage\Report\Xml;
 
+use function assert;
 use DOMElement;
+use SebastianBergmann\CodeCoverage\CodeCoverage;
 
 /**
  * @internal This class is not covered by the backward compatibility promise for phpunit/php-code-coverage
  *
- * @psalm-import-type TestType from \SebastianBergmann\CodeCoverage\CodeCoverage
+ * @phpstan-import-type TestType from CodeCoverage
  */
-final class Tests
+final readonly class Tests
 {
-    private readonly DOMElement $contextNode;
+    private DOMElement $contextNode;
 
     public function __construct(DOMElement $context)
     {
@@ -33,9 +35,11 @@ final class Tests
         $node = $this->contextNode->appendChild(
             $this->contextNode->ownerDocument->createElementNS(
                 'https://schema.phpunit.de/coverage/1.0',
-                'test'
-            )
+                'test',
+            ),
         );
+
+        assert($node instanceof DOMElement);
 
         $node->setAttribute('name', $test);
         $node->setAttribute('size', $result['size']);

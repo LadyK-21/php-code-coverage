@@ -13,11 +13,11 @@ use function explode;
 use function file_get_contents;
 use function preg_match;
 use function str_contains;
-use PhpParser\Lexer;
 use PhpParser\NodeTraverser;
 use PhpParser\ParserFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\RequiresPhp;
+use PHPUnit\Framework\Attributes\Ticket;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass(ExecutableLinesFindingVisitor::class)]
@@ -25,28 +25,51 @@ final class ExecutableLinesFindingVisitorTest extends TestCase
 {
     public function testExecutableLinesAreGroupedByBranch(): void
     {
-        $this->doTestSelfDescribingAsset(TEST_FILES_PATH . 'source_for_branched_exec_lines.php');
+        $this->doTestSelfDescribingAssert(TEST_FILES_PATH . 'source_for_branched_exec_lines.php');
     }
 
-    #[RequiresPhp('8.1.*')]
+    #[RequiresPhp('>=8.1')]
     public function testExecutableLinesAreGroupedByBranchPhp81(): void
     {
-        $this->doTestSelfDescribingAsset(TEST_FILES_PATH . 'source_for_branched_exec_lines_php81.php');
+        $this->doTestSelfDescribingAssert(TEST_FILES_PATH . 'source_for_branched_exec_lines_php81.php');
     }
 
-    #[RequiresPhp('8.2.*')]
+    #[RequiresPhp('>=8.2')]
     public function testExecutableLinesAreGroupedByBranchPhp82(): void
     {
-        $this->doTestSelfDescribingAsset(TEST_FILES_PATH . 'source_for_branched_exec_lines_php82.php');
+        $this->doTestSelfDescribingAssert(TEST_FILES_PATH . 'source_for_branched_exec_lines_php82.php');
     }
 
-    private function doTestSelfDescribingAsset(string $filename): void
+    #[Ticket('https://github.com/sebastianbergmann/php-code-coverage/issues/967')]
+    public function testMatchArmsAreProcessedCorrectly(): void
     {
-        $source = file_get_contents($filename);
-        $parser = (new ParserFactory)->create(
-            ParserFactory::PREFER_PHP7,
-            new Lexer
+        $source                        = file_get_contents(__DIR__ . '/../../_files/source_match_expression.php');
+        $parser                        = (new ParserFactory)->createForHostVersion();
+        $nodes                         = $parser->parse($source);
+        $executableLinesFindingVisitor = new ExecutableLinesFindingVisitor($source);
+
+        $traverser = new NodeTraverser;
+        $traverser->addVisitor($executableLinesFindingVisitor);
+        $traverser->traverse($nodes);
+
+        $this->assertSame(
+            [
+                8  => 2,
+                9  => 3,
+                10 => 4,
+                11 => 5,
+                12 => 6,
+                13 => 7,
+                14 => 2,
+            ],
+            $executableLinesFindingVisitor->executableLinesGroupedByBranch(),
         );
+    }
+
+    private function doTestSelfDescribingAssert(string $filename): void
+    {
+        $source                        = file_get_contents($filename);
+        $parser                        = (new ParserFactory)->createForHostVersion();
         $nodes                         = $parser->parse($source);
         $executableLinesFindingVisitor = new ExecutableLinesFindingVisitor($source);
 
@@ -78,7 +101,7 @@ final class ExecutableLinesFindingVisitorTest extends TestCase
 
         $this->assertEquals(
             $expected,
-            $executableLinesGroupedByBranch
+            $executableLinesGroupedByBranch,
         );
     }
 }

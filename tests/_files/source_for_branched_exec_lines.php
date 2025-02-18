@@ -460,12 +460,18 @@ class MyClass
                 {
                     return;                 // +3
                 }
-            }                               // -3
+
+                public function m1(): void {} // +1
+                public function m2(): void {
+                }                           // +1
+                public function m3(): void
+                {}                          // +1
+            }                               // -6
         ;                                   // 0
     }
     public function withComments()
     {
-        $var = 1;                           // +4
+        $var = 1;                           // +7
         /** @var int $var */
         $var = 2;                           // +1
         // C3
@@ -572,12 +578,17 @@ interface MyInterface
         'string',
     ];
     public function myMethod();
+    public function multiline(
+        \stdClass $var
+    ): \stdClass;
+    public function multilineVoid(
+    ): void;
 }
 
 trait MyTrait
 {
     public function myTrait()
-    {}                                      // +3
+    {}                                      // +6
 }
 
 abstract class MyAbstractClass implements MyInterface
@@ -589,7 +600,12 @@ final class MyFinalClass extends MyAbstractClass
         'foo' => 'bar',
     ];
     private string $var;
-    public function myMethod(): void
+    public function m1(): void {}   // +4
+    public function m2(): void {
+    }                               // +1
+    public function m3(): void
+    {}                              // +1
+    public function m4(): void
     {
-    }                                       // +4
+    }                               // +1
 }
